@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+    <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="{% static 'js/csrf_cookie.js' %}"></script> 
+    <title> USER REST </title>
+    </head>
+    <body>
+    <div id="form">
+        {% if form %}
+            {{form.as_p}}
+            {% csrf_token %}
+        {% endif %}
+    </div>
+    <button onclick="crearRegistro()">Crear</button>
+    <button onclick="modificarRegistro()">Modificar</button>
+    <button onclick="deleteRegistro()">Eliminar</button>
+    <div id="data">
+        {% if users %}
+        <table id="registro">
+            <tr>
+              <th>Id</th>
+              <th>Email</th>
+              <th>Nombre</th>
+            </tr>
+            {% for user in users %}
+            <tr id="{{user.id}}">
+              <th> {{ user.id }}</th>
+              <th> {{ user.email_drest }}</th>
+              <th> {{ user.name_drest }}</th>
+            </tr> 
+            {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+    <div id="registro_js"></div>
+    </body>
+    <script type="text/javascript" src="{% static 'js/peticion.js' %}"></script> 
+    <script>
+        const URL = ("{% url 'drest' id='id' %}")
+        function get_datos(){
+            $('#registro_js').empty();
+            return {'id':$('#id_id').val(), 'email':$('#id_email_drest').val(), 'name':$('#id_name_drest').val()}
+        }
+        function decodeRespuesta(respuesta){
+            return JSON.parse(respuesta['responseText'])
+        }
+        function showError(respuesta){
+            $('#registro_js').empty();
+            $('#registro_js').append('<p> Se ha producido un error en la operación: '+ respuesta['message'] +'<br>'+
+                'error: ' +respuesta['error']+ '</p>');
+        }
+        function crearRegistro() {
+            var data = get_datos() 
+            var respuesta = enviopeticion('POST',URL.replace('/id',"/"+data['id']),data)
+            respuesta = decodeRespuesta(respuesta)
+            console.log('devu',respuesta)
+            if (respuesta['status'] == 200) {
+                r_user = JSON.parse(respuesta['user'])
+                $('#registro tr:last').after('<tr id="'+r_user['id']+'"><th>'+r_user['id']+'</th>'+
+                '<th>'+r_user['email']+'</th>'+
+                '<th>'+r_user['name']+'</th></tr>');
+            }
+            else {
+                showError(respuesta)
+            }
+           
+        }
+        function modificarRegistro(){
+            var data = get_datos() 
+            var respuesta = enviopeticion('PUT',URL.replace('/id',"/"+data['id']),data)
+            respuesta = decodeRespuesta(respuesta)
+            if (respuesta['status'] == 200) {
+                r_user = JSON.parse(respuesta['user'])
+                $('#'+r_user['id']).empty()
+                $('#'+r_user['id']).append('<th>'+r_user['id']+'</th>'+
+                '<th>'+r_user['email']+'</th>'+
+                '<th>'+r_user['name']+'</th>')
+            }else{
+                showError(respuesta)
+            }
+        }
+        function deleteRegistro(){
+            var data = get_datos()
+            var respuesta = enviopeticion('DELETE',URL.replace('/id',"/"+data['id']),data)
+            respuesta = decodeRespuesta(respuesta)
+            if (respuesta['status'] == 200) {
+                $('#'+respuesta['id']).empty()
+            }else{
+                showError(respuesta)
+            }
+        }
+    </script>
+</html>
